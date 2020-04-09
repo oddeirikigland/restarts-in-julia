@@ -13,4 +13,14 @@ restart_bind(func, restarts...) = nothing
 
 error(exception::Exception) = throw(exception)
 
-handler_bind(func, handlers...) = nothing
+handler_bind(func, handlers...) =
+    try
+        func()
+    catch e
+        for handler in handlers
+            (key, value) = handler
+            if key() === e
+                value(e)
+            end
+        end
+    end
