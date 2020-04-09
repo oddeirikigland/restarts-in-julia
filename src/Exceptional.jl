@@ -1,3 +1,6 @@
+struct DivisionByZero <: Exception end
+Base.showerror(io::IO, e::DivisionByZero) = print(io, e, " was not handled.")
+
 block(func) = nothing
 
 return_from(name, value = nothing) = nothing
@@ -8,6 +11,6 @@ invoke_restart(name, args...) = nothing
 
 restart_bind(func, restarts...) = nothing
 
-error(exception::Exception) = Base.error("$(exception) was not handled.")
+error(exception::Exception) = throw(exception)
 
 handler_bind(func, handlers...) = nothing

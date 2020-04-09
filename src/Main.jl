@@ -1,7 +1,5 @@
 include("Exceptional.jl")
 
-struct DivisionByZero <: Exception end
-
 reciprocal(x) = 
 x == 0 ?
 error(DivisionByZero()) :
