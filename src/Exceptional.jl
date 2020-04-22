@@ -6,7 +6,7 @@ block_num = 0
 function block(func)
     try
         global block_num += 1
-        return func(block_num)
+        func(block_num)
     catch r
         name, value = r
         if name == block_num
