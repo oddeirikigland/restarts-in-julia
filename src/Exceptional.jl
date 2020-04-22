@@ -1,9 +1,24 @@
 struct DivisionByZero <: Exception end
 Base.showerror(io::IO, e::DivisionByZero) = print(io, e, " was not handled.")
 
-block(func) = nothing
+block_num = 0
 
-return_from(name, value = nothing) = nothing
+function block(func)
+    try
+        global block_num += 1
+        return func(block_num)
+    catch r
+        name, value = r
+        if name == block_num
+            return value
+        end
+        rethrow([name + 1, value])
+    end
+end
+
+function return_from(name, value = nothing)
+    throw([name, value])
+end
 
 available_restart(name) = nothing
 
@@ -13,14 +28,4 @@ restart_bind(func, restarts...) = nothing
 
 error(exception::Exception) = throw(exception)
 
-handler_bind(func, handlers...) =
-    try
-        func()
-    catch e
-        for handler in handlers
-            (key, value) = handler
-            if key() === e
-                value(e)
-            end
-        end
-    end
+handler_bind(func, handlers...) = nothing
