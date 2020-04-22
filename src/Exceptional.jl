@@ -1,3 +1,6 @@
+module Exceptional
+export DivisionByZero, block, return_from, error
+
 struct DivisionByZero <: Exception end
 Base.showerror(io::IO, e::DivisionByZero) = print(io, e, " was not handled.")
 
@@ -27,3 +30,5 @@ restart_bind(func, restarts...) = nothing
 error(exception::Exception) = throw(exception)
 
 handler_bind(func, handlers...) = nothing
+
+end
