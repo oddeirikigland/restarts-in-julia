@@ -16,9 +16,7 @@ function block(func)
     end
 end
 
-function return_from(name, value = nothing)
-    throw([name, value])
-end
+return_from(name, value = nothing) = throw([name, value])
 
 available_restart(name) = nothing
 
