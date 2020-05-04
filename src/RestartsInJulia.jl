@@ -18,4 +18,18 @@ mystery(n) = 1 + Exceptional.block() do outer
     end
 end
 
+@assert mystery(0) == 3
+@assert mystery(1) == 2
+@assert mystery(2) == 4
+
+mystery_new() =
+    Exceptional.block() do outer
+        Exceptional.block() do inner
+            1
+        end
+        Exceptional.return_from(outer, 2)
+    end
+
+@assert mystery_new() == 2
+
 end

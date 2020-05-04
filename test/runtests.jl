@@ -9,3 +9,5 @@ end
 @test RestartsInJulia.mystery(0) == 3
 @test RestartsInJulia.mystery(1) == 2
 @test RestartsInJulia.mystery(2) == 4
+
+@test RestartsInJulia.mystery_new() == 2
