@@ -1,13 +1,14 @@
-using Test, RestartsInJulia
+include("../src/RestartsInJulia.jl")
+using Test, .RestartsInJulia
 
 try
     RestartsInJulia.reciprocal(0)
 catch r
-    @test r == RestartsInJulia.Exceptional.DivisionByZero()
+    @test r == Exceptional.DivisionByZero()
 end
 
 @test RestartsInJulia.mystery(0) == 3
 @test RestartsInJulia.mystery(1) == 2
 @test RestartsInJulia.mystery(2) == 4
 
-@test RestartsInJulia.mystery_new() == 2
+@test mystery_2() == 2
