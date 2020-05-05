@@ -78,3 +78,28 @@ end == "HandlerBindTest1"
         end
     end
 end == "HandlerBindTest2"
+
+
+reciprocal(value) =
+    Exceptional.restart_bind(
+        :return_zero => () -> 0,
+        :return_value => identity,
+        :retry_using => reciprocal,
+    ) do
+        value == 0 ? Exceptional.error(Exceptional.DivisionByZero()) : 1 / value
+    end
+
+
+@test Exceptional.handler_bind(Exceptional.DivisionByZero => (c) -> Exceptional.invoke_restart(:return_zero)) do
+    reciprocal(0)
+end == 0
+
+
+@test Exceptional.handler_bind(Exceptional.DivisionByZero => (c) -> Exceptional.invoke_restart(:return_value, 123)) do
+    reciprocal(0)
+end == 123
+
+
+@test Exceptional.handler_bind(Exceptional.DivisionByZero => (c) -> Exceptional.invoke_restart(:retry_using, 10)) do
+    reciprocal(0)
+end == 0.1

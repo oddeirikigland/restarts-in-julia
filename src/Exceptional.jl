@@ -1,5 +1,5 @@
 module Exceptional
-export DivisionByZero, block, return_from, error, handler_bind
+export DivisionByZero, block, return_from, available_restart, invoke_restart, restart_bind, error, handler_bind
 
 struct DivisionByZero <: Exception end
 Base.showerror(io::IO, e::DivisionByZero) = print(io, e, " was not handled.")
