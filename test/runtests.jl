@@ -1,48 +1,63 @@
-include("../src/RestartsInJulia.jl")
-using Test, Suppressor, .RestartsInJulia
+include("../src/Exceptional.jl")
+using Test, Suppressor, .Exceptional
 
 
-reciprocal(x) =
-    x == 0 ? Exceptional.error(RestartsInJulia.Exceptional.DivisionByZero()) : 1 / x
+reciprocal(x) = x == 0 ? Exceptional.error(Exceptional.DivisionByZero()) : 1 / x
 
 
 try
     reciprocal(0)
 catch r
-    @test r == RestartsInJulia.Exceptional.DivisionByZero()
+    @test r == Exceptional.DivisionByZero()
 end
 
 
-@test RestartsInJulia.mystery(0) == 3
-@test RestartsInJulia.mystery(1) == 2
-@test RestartsInJulia.mystery(2) == 4
+mystery(n) = 1 + Exceptional.block() do outer
+    1 + Exceptional.block() do inner
+        1 + if n == 0
+            Exceptional.return_from(inner, 1)
+        elseif n == 1
+            Exceptional.return_from(outer, 1)
+        else
+            1
+        end
+    end
+end
 
 
-@test mystery_2() == 2
+@test mystery(0) == 3
+@test mystery(1) == 2
+@test mystery(2) == 4
+
+
+@test Exceptional.block() do outer
+    Exceptional.block() do inner
+        1
+    end
+    Exceptional.return_from(outer, 2)
+end == 2
 
 
 @test "I saw a division by zero" == @capture_out try
-    RestartsInJulia.Exceptional.handler_bind(
-        RestartsInJulia.Exceptional.DivisionByZero =>
-            (c) -> print("I saw a division by zero"),
+    Exceptional.handler_bind(
+        Exceptional.DivisionByZero => (c) -> print("I saw a division by zero"),
     ) do
         reciprocal(0)
     end
 catch r
-    @test r == RestartsInJulia.Exceptional.DivisionByZero()
+    @test r == Exceptional.DivisionByZero()
 end
 
 
 @test "I saw a division by zeroI saw it too" ==
-      @capture_out @test RestartsInJulia.Exceptional.block() do escape
-    RestartsInJulia.Exceptional.handler_bind(
-        RestartsInJulia.Exceptional.DivisionByZero =>
+      @capture_out @test Exceptional.block() do escape
+    Exceptional.handler_bind(
+        Exceptional.DivisionByZero =>
             (c) -> (print("I saw it too");
-            RestartsInJulia.Exceptional.return_from(escape, "HandlerBindTest1")),
+            Exceptional.return_from(escape, "HandlerBindTest1")),
     ) do
-        RestartsInJulia.Exceptional.handler_bind(
-            RestartsInJulia.Exceptional.DivisionByZero =>
-                (c) -> print("I saw a division by zero"),
+        Exceptional.handler_bind(
+            Exceptional.DivisionByZero => (c) -> print("I saw a division by zero"),
         ) do
             reciprocal(0)
         end
@@ -50,15 +65,14 @@ end
 end == "HandlerBindTest1"
 
 
-@test "I saw a division by zero" ==
-      @capture_out @test RestartsInJulia.Exceptional.block() do escape
-    RestartsInJulia.Exceptional.handler_bind(
-        RestartsInJulia.Exceptional.DivisionByZero => (c) -> print("I saw it too"),
+@test "I saw a division by zero" == @capture_out @test Exceptional.block() do escape
+    Exceptional.handler_bind(
+        Exceptional.DivisionByZero => (c) -> print("I saw it too"),
     ) do
-        RestartsInJulia.Exceptional.handler_bind(
-            RestartsInJulia.Exceptional.DivisionByZero =>
+        Exceptional.handler_bind(
+            Exceptional.DivisionByZero =>
                 (c) -> (print("I saw a division by zero");
-                RestartsInJulia.Exceptional.return_from(escape, "HandlerBindTest2")),
+                Exceptional.return_from(escape, "HandlerBindTest2")),
         ) do
             reciprocal(0)
         end
