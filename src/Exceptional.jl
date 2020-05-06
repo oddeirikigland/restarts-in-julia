@@ -19,7 +19,8 @@ function block(func)
         if name == block_num
             return value
         end
-        rethrow([name + 1, value])
+        global block_num -= 1
+        rethrow()
     end
 end
 
@@ -50,7 +51,6 @@ function restart_bind(func, restarts...)
     else
         global global_restarts = tuple(global_restarts..., restarts...)
     end
-
     try
         func()
     catch e
