@@ -14,8 +14,8 @@ function block(func)
         res = func(block_num)
         global block_num -= 1
         res
-    catch r
-        name, value = r
+    catch e
+        name, value = e
         if name == block_num
             return value
         end
