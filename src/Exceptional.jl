@@ -45,10 +45,10 @@ function invoke_restart(name, args...)
 end
 
 function restart_bind(func, restarts...)
-    if global_restarts != nothing
-        global global_restarts = tuple(global_restarts..., restarts...)
-    else
+    if global_restarts == nothing
         global global_restarts = restarts
+    else
+        global global_restarts = tuple(global_restarts..., restarts...)
     end
 
     try
