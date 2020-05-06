@@ -90,16 +90,89 @@ reciprocal(value) =
     end
 
 
-@test Exceptional.handler_bind(Exceptional.DivisionByZero => (c) -> Exceptional.invoke_restart(:return_zero)) do
+@test Exceptional.handler_bind(
+    Exceptional.DivisionByZero => (c) -> Exceptional.invoke_restart(:return_zero),
+) do
     reciprocal(0)
 end == 0
 
 
-@test Exceptional.handler_bind(Exceptional.DivisionByZero => (c) -> Exceptional.invoke_restart(:return_value, 123)) do
+@test Exceptional.handler_bind(
+    Exceptional.DivisionByZero => (c) -> Exceptional.invoke_restart(:return_value, 123),
+) do
     reciprocal(0)
 end == 123
 
 
-@test Exceptional.handler_bind(Exceptional.DivisionByZero => (c) -> Exceptional.invoke_restart(:retry_using, 10)) do
+@test Exceptional.handler_bind(
+    Exceptional.DivisionByZero => (c) -> Exceptional.invoke_restart(:retry_using, 10),
+) do
     reciprocal(0)
 end == 0.1
+
+
+@test Exceptional.handler_bind(
+    Exceptional.DivisionByZero => (c) -> Exceptional.invoke_restart(:return_zero),
+) do
+    reciprocal(0)
+end == 0
+
+
+@test Exceptional.handler_bind(
+    Exceptional.DivisionByZero => (c) -> Exceptional.invoke_restart(:return_value, 123),
+) do
+    reciprocal(0)
+end == 123
+
+
+@test Exceptional.handler_bind(
+    Exceptional.DivisionByZero => (c) -> Exceptional.invoke_restart(:retry_using, 10),
+) do
+    reciprocal(0)
+end == 0.1
+
+
+@test Exceptional.Exceptional.handler_bind(
+    Exceptional.DivisionByZero =>
+        (c) -> for restart in (:return_one, :return_zero, :die_horribly)
+            if Exceptional.available_restart(restart)
+                return Exceptional.invoke_restart(restart)
+            end
+        end,
+) do
+    reciprocal(0)
+end == 0
+
+
+infinity() =
+    Exceptional.restart_bind(:just_do_it => () -> 1 / 0) do
+        reciprocal(0)
+    end
+
+
+@test Exceptional.handler_bind(
+    Exceptional.DivisionByZero => (c) -> Exceptional.invoke_restart(:return_zero),
+) do
+    infinity()
+end == 0
+
+
+@test Exceptional.handler_bind(
+    Exceptional.DivisionByZero => (c) -> Exceptional.invoke_restart(:return_value, 1),
+) do
+    infinity()
+end == 1
+
+
+@test Exceptional.handler_bind(
+    Exceptional.DivisionByZero => (c) -> Exceptional.invoke_restart(:retry_using, 10),
+) do
+    infinity()
+end == 0.1
+
+
+@test Exceptional.handler_bind(
+    Exceptional.DivisionByZero => (c) -> Exceptional.invoke_restart(:just_do_it),
+) do
+    infinity()
+end == Inf
