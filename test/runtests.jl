@@ -188,3 +188,87 @@ end == 0.1
 ) do
     infinity()
 end == Inf
+
+line_end = 20
+struct LineEndLimit <: Exception end
+
+function print_line(str)
+    let col = 0
+        for c in str
+            print(c)
+            if col < line_end
+                col += 1
+            else
+                Exceptional.signal(LineEndLimit())
+            end
+        end
+        println()
+        col
+    end
+end
+
+@test "Hi, everybody!\n" == @capture_out @test print_line("Hi, everybody!") == 14
+@test "Hi, everybody! How are you feeling today?\n" == @capture_out @test print_line("Hi, everybody! How are you feeling today?") == 20
+
+@test "Hi, everybody! How ar" == @capture_out try
+    Exceptional.toogle_break_on_signal()
+    print_line("Hi, everybody! How are you feeling today?") == 20
+catch e
+    @test e == LineEndLimit()
+finally
+    Exceptional.toogle_break_on_signal()
+end
+
+
+function print_computing_excess(str)
+    let excess = 0
+        Exceptional.handler_bind(LineEndLimit => (c) -> begin
+            excess += 1
+            nothing
+        end) do
+            print_line(str)
+        end
+        excess
+    end
+end
+
+@test "Hi, everybody!\n" == @capture_out @test print_computing_excess("Hi, everybody!") == 0
+@test "Hi, everybody! How are you feeling today?\n" == @capture_out @test print_computing_excess("Hi, everybody! How are you feeling today?") == 21
+
+
+function print_maybe_aborting(str)
+    Exceptional.block() do escape
+        Exceptional.handler_bind(
+            LineEndLimit => (c) -> Exceptional.return_from(escape, "Line too long"),
+        ) do
+            print_line(str)
+        end
+    end
+end
+
+@test "Hi, everybody! How ar" == @capture_out @test print_maybe_aborting("Hi, everybody! How are you feeling today?") == "Line too long"
+
+function aborting_on_line_end_limit(f)
+    Exceptional.block() do escape
+        Exceptional.handler_bind(
+            LineEndLimit => (c) -> Exceptional.return_from(escape, nothing),
+        ) do
+            f()
+        end
+    end
+end
+
+@test "Hi, everybody! How ar" == @capture_out @test aborting_on_line_end_limit(
+    () -> print_line("Hi, everybody! How are you feeling today?"),
+) === nothing
+
+
+function warning_on_signals(f)
+    Exceptional.handler_bind(Exception => (c) -> println("I saw a signal")) do
+        f()
+    end
+end
+
+@test "Hi, everybody! How arI saw a signal\n" == @capture_out @test aborting_on_line_end_limit(
+    () -> warning_on_signals(() -> print_line("Hi, everybody! How are you feeling today?")),
+) === nothing

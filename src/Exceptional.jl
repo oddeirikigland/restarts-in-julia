@@ -8,6 +8,9 @@ Base.showerror(io::IO, e::DivisionByZero) = print(io, e, " was not handled.")
 block_num = 0
 global_restarts = nothing
 global_handlers = nothing
+break_on_signal = false
+
+toogle_break_on_signal() = global break_on_signal = !break_on_signal
 
 function block(func)
     try
@@ -60,7 +63,7 @@ function restart_bind(func, restarts...)
 
 end
 
-function error(exception::Exception)
+function signal(exception::Exception)
     if global_handlers !== nothing
         for handler in global_handlers
             handler_name, handler_function = handler
@@ -71,6 +74,16 @@ function error(exception::Exception)
                 end
             end
         end
+    end
+    if break_on_signal
+        throw(exception)
+    end
+end
+
+function error(exception::Exception)
+    res = signal(exception)
+    if res !== nothing
+        return res
     end
     throw(exception)
 end
