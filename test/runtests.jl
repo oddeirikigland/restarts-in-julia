@@ -48,6 +48,18 @@ catch r
     @test r == Exceptional.DivisionByZero()
 end
 
+@test "I saw a division by zeroI saw it too" == @capture_out try
+    Exceptional.handler_bind(Exceptional.DivisionByZero => (c) -> print("I saw it too")) do
+        Exceptional.handler_bind(
+            Exceptional.DivisionByZero => (c) -> print("I saw a division by zero"),
+        ) do
+            reciprocal(0)
+        end
+    end
+catch r
+    @test r == Exceptional.DivisionByZero()
+end
+
 
 @test "I saw a division by zeroI saw it too" ==
       @capture_out @test Exceptional.block() do escape

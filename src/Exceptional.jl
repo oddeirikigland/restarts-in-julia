@@ -7,6 +7,7 @@ Base.showerror(io::IO, e::DivisionByZero) = print(io, e, " was not handled.")
 
 block_num = 0
 global_restarts = nothing
+global_handlers = nothing
 
 function block(func)
     try
@@ -46,39 +47,48 @@ function invoke_restart(name, args...)
 end
 
 function restart_bind(func, restarts...)
-    if global_restarts == nothing
+    previous_restarts = global_restarts
+    if global_restarts === nothing
         global global_restarts = restarts
     else
-        global global_restarts = tuple(global_restarts..., restarts...)
+        global global_restarts = tuple(restarts..., global_restarts...)
     end
-    try
-        func()
-    catch e
-        rethrow()
-    end
+
+    res = func()
+    global global_restarts = previous_restarts
+    return res
+
 end
 
-error(exception::Exception) = throw(exception)
+function error(exception::Exception)
+    if global_handlers !== nothing
+        for handler in global_handlers
+            handler_name, handler_function = handler
+            if isa(exception, handler_name)
+                res = handler_function(exception)
+                if res !== nothing
+                    return res
+                end
+            end
+        end
+    end
+    throw(exception)
+end
 
 function handler_bind(func, handlers...)
+    previous_handlers = global_handlers
+    if global_handlers === nothing
+        global global_handlers = handlers
+    else
+        global global_handlers = tuple(handlers..., global_handlers...)
+    end
+
     try
         func()
     catch e
-        if isa(e, Array)
-            rethrow()
-        end
-        for handler in handlers
-            exception_type, handler_function = handler
-            if exception_type == typeof(e)
-                res = handler_function(e)
-                if res == nothing
-                    rethrow()
-                end
-                return res
-            end
-        end
+        throw(e)
     finally
-        global global_restarts = nothing
+        global global_handlers = previous_handlers
     end
 end
 end
