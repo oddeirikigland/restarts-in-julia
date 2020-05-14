@@ -272,3 +272,14 @@ end
 @test "Hi, everybody! How arI saw a signal\n" == @capture_out @test aborting_on_line_end_limit(
     () -> warning_on_signals(() -> print_line("Hi, everybody! How are you feeling today?")),
 ) === nothing
+
+
+@test Exceptional.handler_bind(Exceptional.DivisionByZero => (c)->Exceptional.invoke_restart(:return_zero)) do
+    1 + reciprocal(0)
+end == 1
+
+divide(x, y) = x*reciprocal(y)
+
+@test Exceptional.handler_bind(Exceptional.DivisionByZero => (c)->Exceptional.invoke_restart(:return_value, 3)) do
+    divide(2, 0)
+end == 6

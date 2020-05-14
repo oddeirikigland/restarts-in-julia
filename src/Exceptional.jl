@@ -1,6 +1,13 @@
 module Exceptional
 export DivisionByZero,
-    block, return_from, available_restart, invoke_restart, restart_bind, error, handler_bind
+    block,
+    return_from,
+    available_restart,
+    invoke_restart,
+    restart_bind,
+    error,
+    handler_bind,
+    pick_restart
 
 struct DivisionByZero <: Exception end
 Base.showerror(io::IO, e::DivisionByZero) = print(io, e, " was not handled.")
@@ -49,6 +56,44 @@ function invoke_restart(name, args...)
     end
 end
 
+function pick_restart()
+    numb_to_restart = Dict()
+    count = 1
+    println("\nRestarts:")
+    for restart in global_restarts
+        numb_to_restart[count] = restart
+        println("$(count): [$(restart[1])]")
+        count += 1
+    end
+    from_user = 0
+    while from_user < 1 || from_user > count - 1
+        print("Choose restart [1-$(count - 1)]: ")
+        try
+            from_user = parse(Int8, readline())
+        catch e
+            println("Invalid input, choose a number in the range 1-$(count - 1)")
+        end
+    end
+    restart_name, restart_function = numb_to_restart[from_user]
+    numb_args = methods(restart_function).mt.max_args - 1
+    println("You choosed $(restart_name), the function require $(numb_args) arguments")
+    args = []
+    for i in 1:numb_args
+        print("Arg $(i): ")
+        from_user = nothing
+        while from_user === nothing
+            try
+                from_user = parse(Float16, readline())
+                append!(args, [from_user])
+            catch e
+                println("Invalid input, needs to be a number") # TODO: accept several input types
+            end
+        end
+    end
+    println()
+    return restart_function(args...)
+end
+
 function restart_bind(func, restarts...)
     previous_restarts = global_restarts
     if global_restarts === nothing
@@ -56,11 +101,9 @@ function restart_bind(func, restarts...)
     else
         global global_restarts = tuple(restarts..., global_restarts...)
     end
-
     res = func()
     global global_restarts = previous_restarts
     return res
-
 end
 
 function signal(exception::Exception)
