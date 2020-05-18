@@ -1,3 +1,7 @@
+"""
+Exceptional signals and handles exceptional situations, including use of restarts. 
+An exceptional situation occur when a program reaches a point where a planned operation cannot be done.
+"""
 module Exceptional
 export DivisionByZero,
     block, return_from, available_restart, invoke_restart, restart_bind, error, handler_bind
@@ -9,6 +13,12 @@ block_num = 0
 global_restarts = nothing
 global_handlers = nothing
 
+"""
+block makes it possible to do a non-local transfer of control.
+By using block, a named exit point is set. 
+Calling the return_from function inside the block context make it possible to
+return values from those named exit points.
+"""
 function block(func)
     try
         global block_num += 1
@@ -25,8 +35,16 @@ function block(func)
     end
 end
 
+"""
+return_from works together with the block function. It's telling the block function which value to return,
+and from which context this value should be returned.
+"""
 return_from(name, value = nothing) = throw([name, value])
 
+"""
+available_restart takes a named restarts as input and returns true if this is a possible
+restart to do.
+"""
 function available_restart(name)
     for restart in global_restarts
         restart_name, _ = restart
@@ -37,6 +55,10 @@ function available_restart(name)
     false
 end
 
+"""
+invoke_restart finds the registered restart connected to the input argument name. It returns the
+corresponding restart function with corresponding arguments.
+"""
 function invoke_restart(name, args...)
     for restart in global_restarts
         restart_name, restart_function = restart
@@ -46,6 +68,10 @@ function invoke_restart(name, args...)
     end
 end
 
+"""
+restart_bind gives the ability to go back to the place where an exceptional situation happened,
+from this place a given action called restart can be done to fix the occuring error.
+"""
 function restart_bind(func, restarts...)
     previous_restarts = global_restarts
     if global_restarts === nothing
@@ -60,6 +86,11 @@ function restart_bind(func, restarts...)
 
 end
 
+"""
+error recives an exception as input. It check the registered handlers, if any of these handlers is the
+same type as the input exception, or a parent of the input exception, that handler function is called.
+If none of the handler functions returns a result the incoming error is thrown.
+"""
 function error(exception::Exception)
     if global_handlers !== nothing
         for handler in global_handlers
@@ -75,6 +106,10 @@ function error(exception::Exception)
     throw(exception)
 end
 
+"""
+handler_bind makes it possible to be notified when an exceptional situation occur. This is done by
+wrapping a function who could give an exceptional situation within handlers.
+"""
 function handler_bind(func, handlers...)
     previous_handlers = global_handlers
     if global_handlers === nothing
