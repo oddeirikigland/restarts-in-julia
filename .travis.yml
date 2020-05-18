@@ -18,6 +18,5 @@ after_success:
 
 jobs:
     include:
-        - stage: "Documentation"
         script:
             - julia --project docs/make.jl
