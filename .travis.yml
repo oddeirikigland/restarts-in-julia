@@ -16,3 +16,8 @@ script:
 after_success:
     - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
 
+jobs:
+    include:
+        - stage: "Documentation"
+        script:
+            - julia --project docs/make.jl
