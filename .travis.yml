@@ -19,4 +19,5 @@ after_success:
 jobs:
     include:
         script:
+            - julia --project -e 'using Pkg; Pkg.instantiate()'
             - julia --project docs/make.jl
