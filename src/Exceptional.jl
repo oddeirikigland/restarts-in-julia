@@ -13,7 +13,7 @@ struct DivisionByZero <: Exception end
 Base.showerror(io::IO, e::DivisionByZero) = print(io, e, " was not handled.")
 
 block_num = 0
-global_restarts = nothing
+global_restarts = (:test => (c) -> println("test $(c)"),)
 global_handlers = nothing
 break_on_signal = false
 
@@ -148,3 +148,134 @@ function handler_bind(func, handlers...)
     end
 end
 end
+
+
+macro handler_case(func, handlers...)
+    #dump(handlers[1])
+    #println(func.args[1])
+    # dump(handlers)
+    introspected_handlers = []
+    for handler in handlers
+        module_name = handler.args[1].args[1]
+        exception_type = handler.args[1].args[2].value
+        parameters = tuple(handler.args[2].args...)
+        body = handler.args[3]
+        append!(introspected_handlers, [:($(module_name).$(exception_type) => ($(parameters...)) -> $(body))])
+    end
+    println(introspected_handlers...)
+    :(Exceptional.block() do escape
+        Exceptional.handler_bind(
+            $(introspected_handlers...)
+        ) do 
+            $(func)
+        end
+    end)
+end
+
+reciprocal(x) = x == 0 ? Exceptional.error(Exceptional.DivisionByZero()) : 1 / x
+
+# res = @handler_case reciprocal(0) (Exceptional.DivisionByZero, :(c,), println("I saw a division by zero")) (Exceptional.Exception, :(c,), println("I am $(:c)"))
+
+
+
+# Exceptional.handler_bind(
+#         Exceptional.DivisionByZero => (c) -> print("I saw a division by zero"),
+#     ) do
+#         reciprocal(0)
+#     end
+
+res = @handler_case (
+        @handler_case reciprocal(0) (Exceptional.DivisionByZero, :(c,), println("I saw a division by zero"))
+    ) (Exceptional.DivisionByZero, :(c,), (println("I saw it too"); Exceptional.return_from(escape, "Test 1")))
+
+println("res $(res)")
+
+# Exceptional.block() do escape
+#     Exceptional.handler_bind(
+#         Exceptional.DivisionByZero =>
+#             (c) -> (print("I saw it too");
+#             Exceptional.return_from(escape, "HandlerBindTest1")),
+#     ) do
+#         Exceptional.handler_bind(
+#             Exceptional.DivisionByZero => (c) -> print("I saw a division by zero"),
+#         ) do
+#             reciprocal(0)
+#         end
+#     end
+# end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# reciprocal(value) =
+#     Exceptional.restart_bind(
+#         :return_zero => () -> 0,
+#         :return_value => identity,
+#         :retry_using => reciprocal,
+#     ) do
+#         value == 0 ? Exceptional.error(Exceptional.DivisionByZero()) : 1 / value
+#     end
+
+
+# # # Exceptional.Exceptional.handler_bind(
+# # #     Exceptional.DivisionByZero =>
+# # #         (c) -> for restart in (:return_one, :return_zero, :die_horribly)
+# # #             if Exceptional.available_restart(restart)
+# # #                 return Exceptional.invoke_restart(restart)
+# # #             end
+# # #         end,
+# # # ) do
+# # #     reciprocal(0)
+# # # end
+
+
+# line_end = 20
+# struct LineEndLimit <: Exception end
+
+# function print_line(str)
+#     let col = 0
+#         for c in str
+#             print(c)
+#             if col < line_end
+#                 col += 1
+#             else
+#                 Exceptional.restart_bind(
+#                     :wrap => () -> begin
+#                     println()
+#                     col = 0
+#                     end,
+#                     :truncate => () -> return, #  Exceptional.return_from(outer, break),
+#                     :continue => () -> begin
+#                         col += 1
+#                         nothing
+#                     end,
+#                 ) do
+#                     Exceptional.signal(LineEndLimit())
+#                 end
+#             end
+#         end
+#         println()
+#         col
+#     end
+# end
+
+# println(
+#     Exceptional.handler_bind(LineEndLimit => (c) -> Exceptional.pick_restart()) do
+#         print_line("Hi, everybody! How are you feeling today?")
+#     end
+# )
