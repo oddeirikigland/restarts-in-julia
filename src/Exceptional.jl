@@ -78,6 +78,9 @@ function invoke_restart(name, args...)
     end
 end
 
+"""
+pick_restart gives the user the possibility to decide which of the registered restarts to use when an exceptional situation occur.
+"""
 function pick_restart()
     numb_to_restart = Dict()
     count = 1
