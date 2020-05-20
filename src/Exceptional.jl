@@ -193,30 +193,31 @@ end
 
 
 macro handler_case(func, handlers...)
-    #dump(handlers[1])
-    #println(func.args[1])
-    # dump(handlers)
     introspected_handlers = []
     for handler in handlers
         module_name = handler.args[1].args[1]
         exception_type = handler.args[1].args[2].value
         parameters = tuple(handler.args[2].args...)
         body = handler.args[3]
-        append!(introspected_handlers, [:($(module_name).$(exception_type) => ($(parameters...)) -> $(body))])
+        # append!(introspected_handlers, [:($(module_name).$(exception_type) => ($(parameters...),) -> $(body))])
+        append!(introspected_handlers, [:($(module_name).$(exception_type) => (c) -> $(body))])
     end
-    println(introspected_handlers...)
-    :(Exceptional.block() do escape
+    :(
         Exceptional.handler_bind(
-            $(introspected_handlers...)
-        ) do 
+            $(introspected_handlers...),
+        ) do
             $(func)
         end
-    end)
+    )
 end
 
 reciprocal(x) = x == 0 ? Exceptional.error(Exceptional.DivisionByZero()) : 1 / x
 
-# res = @handler_case reciprocal(0) (Exceptional.DivisionByZero, :(c,), println("I saw a division by zero")) (Exceptional.Exception, :(c,), println("I am $(:c)"))
+res = @handler_case(
+        reciprocal(0),
+        (Exceptional.DivisionByZero, (), println("I saw a division by zero")),
+        (Exceptional.DivisionByZero, (), println("I saw it too")),
+)
 
 
 
@@ -226,11 +227,11 @@ reciprocal(x) = x == 0 ? Exceptional.error(Exceptional.DivisionByZero()) : 1 / x
 #         reciprocal(0)
 #     end
 
-res = @handler_case (
-        @handler_case reciprocal(0) (Exceptional.DivisionByZero, :(c,), println("I saw a division by zero"))
-    ) (Exceptional.DivisionByZero, :(c,), (println("I saw it too"); Exceptional.return_from(escape, "Test 1")))
+# res = @handler_case (
+#         @handler_case reciprocal(0) (Exceptional.DivisionByZero, (), println("I saw a division by zero"))
+#     ) (Exceptional.DivisionByZero, :(c,), (println("I saw it too"); Exceptional.return_from(escape, "Test 1")))
 
-println("res $(res)")
+println("res: $(res)")
 
 # Exceptional.block() do escape
 #     Exceptional.handler_bind(
