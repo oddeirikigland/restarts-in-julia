@@ -190,3 +190,28 @@ function handler_bind(func, handlers...)
     end
 end
 end
+
+"""
+handler_case makes it easier to use handler_bind.
+It introspect the incoming handlers, and transform them to fit inside the handler_bind function.
+This macro is not complete, still missing to use the parameteres from the user and testing.
+"""
+macro handler_case(func, handlers...)
+    introspected_handlers = []
+    for handler in handlers
+        module_name = handler.args[1].args[1]
+        exception_type = handler.args[1].args[2].value
+        parameters = tuple(handler.args[2].args...)
+        body = handler.args[3]
+        # append!(introspected_handlers, [:($(module_name).$(exception_type) => ($(parameters...),) -> $(body))])
+        append!(
+            introspected_handlers,
+            [:($(module_name).$(exception_type) => (c) -> $(body))],
+        )
+    end
+    :(
+        Exceptional.handler_bind($(introspected_handlers...)) do
+            $(func)
+        end
+    )
+end
