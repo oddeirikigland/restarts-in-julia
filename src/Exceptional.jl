@@ -191,6 +191,11 @@ function handler_bind(func, handlers...)
 end
 end
 
+"""
+handler_case makes it easier to use handler_bind.
+It introspect the incoming handlers, and transform them to fit inside the handler_bind function.
+This macro is not complete, still missing to use the parameteres from the user and testing.
+"""
 macro handler_case(func, handlers...)
     introspected_handlers = []
     for handler in handlers
@@ -210,13 +215,3 @@ macro handler_case(func, handlers...)
         end
     )
 end
-
-reciprocal(x) = x == 0 ? Exceptional.error(Exceptional.DivisionByZero()) : 1 / x
-
-res = @handler_case(
-    reciprocal(0),
-    (Exceptional.DivisionByZero, (), println("I saw a division by zero")),
-    (Exceptional.DivisionByZero, (), println("I saw it too")),
-)
-
-println("res: $(res)")
